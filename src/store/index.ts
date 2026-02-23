@@ -3,15 +3,16 @@ import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
 import adminReducer from './slices/adminSlice';
+import offlineReducer from './slices/offlineSlice';
 
 // Persist configuration
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'], // Only persist auth state
+  whitelist: ['auth', 'admin', 'offline'], // Persist auth, admin data, and offline queue
 };
 
-// Create persisted reducer
+// Create persisted reducers
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
 // Configure store
@@ -19,6 +20,7 @@ export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
     admin: adminReducer,
+    offline: offlineReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
