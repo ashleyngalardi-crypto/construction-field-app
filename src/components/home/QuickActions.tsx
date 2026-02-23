@@ -62,6 +62,10 @@ export const QuickActions = React.memo<QuickActionsProps>(({
           style={[styles.actionButton, { backgroundColor: action.color }]}
           onPress={action.onPress}
           activeOpacity={0.7}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
+          accessibilityHint={`Quick action: ${action.label}`}
         >
           <Text style={styles.icon}>{action.icon}</Text>
           <Text style={[styles.label, TEXT_STYLES.body12]}>

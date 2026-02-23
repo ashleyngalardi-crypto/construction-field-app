@@ -12,6 +12,8 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   testID?: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -23,6 +25,8 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   style,
   testID,
+  accessibilityLabel,
+  accessibilityHint,
 }) => {
   const variantColors = {
     primary: { bg: COLORS.primary, text: 'white' },
@@ -69,6 +73,10 @@ export const Button: React.FC<ButtonProps> = ({
       style={[styles.button, computedStyle, style]}
       testID={testID}
       activeOpacity={0.7}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || label}
+      accessibilityHint={accessibilityHint}
     >
       <Text
         style={[

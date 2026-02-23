@@ -50,6 +50,11 @@ export const TaskItem = React.memo<TaskItemProps>(({ task, onToggle }) => {
         ]}
         onPress={onToggle}
         activeOpacity={0.7}
+        accessible
+        accessibilityRole="checkbox"
+        accessibilityLabel={`Task: ${task.text}`}
+        accessibilityHint={task.done ? 'Completed' : 'Pending'}
+        accessibilityState={{ checked: task.done }}
       >
         {task.done && (
           <Text style={styles.checkmark}>✓</Text>
