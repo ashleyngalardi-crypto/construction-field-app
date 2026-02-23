@@ -1,5 +1,6 @@
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { isOnline, queueOperation, generateTempId, markAsPending } from '../sync/offlineUtils';
 
 export interface CrewMember {
   id: string;
@@ -71,20 +72,35 @@ export const addCrewMember = async (
   companyId: string,
   crewData: Omit<CrewMember, 'id'>
 ): Promise<CrewMember | null> => {
-  try {
-    const docRef = await addDoc(collection(db, 'crew'), {
-      ...crewData,
-      companyId,
-      joinedAt: Date.now(),
-      isActive: true,
+  const now = Date.now();
+  const crewWithMeta = {
+    ...crewData,
+    companyId,
+    joinedAt: now,
+    isActive: true,
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    const tempId = generateTempId();
+    queueOperation({
+      collection: 'crew',
+      operation: 'create',
+      documentId: tempId,
+      data: crewWithMeta,
     });
 
+    return markAsPending({
+      id: tempId,
+      ...crewWithMeta,
+    }) as any;
+  }
+
+  try {
+    const docRef = await addDoc(collection(db, 'crew'), crewWithMeta);
     return {
       id: docRef.id,
-      ...crewData,
-      companyId,
-      joinedAt: Date.now(),
-      isActive: true,
+      ...crewWithMeta,
     };
   } catch (error) {
     console.error('Error adding crew member:', error);
@@ -99,11 +115,24 @@ export const updateCrewMember = async (
   crewId: string,
   updates: Partial<CrewMember>
 ): Promise<boolean> => {
-  try {
-    await updateDoc(doc(db, 'crew', crewId), {
-      ...updates,
-      updatedAt: Date.now(),
+  const updateData = {
+    ...updates,
+    updatedAt: Date.now(),
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'crew',
+      operation: 'update',
+      documentId: crewId,
+      data: updateData,
     });
+    return true;
+  }
+
+  try {
+    await updateDoc(doc(db, 'crew', crewId), updateData);
     return true;
   } catch (error) {
     console.error('Error updating crew member:', error);
@@ -115,6 +144,17 @@ export const updateCrewMember = async (
  * Remove crew member
  */
 export const removeCrewMember = async (crewId: string): Promise<boolean> => {
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'crew',
+      operation: 'delete',
+      documentId: crewId,
+      data: {},
+    });
+    return true;
+  }
+
   try {
     await deleteDoc(doc(db, 'crew', crewId));
     return true;

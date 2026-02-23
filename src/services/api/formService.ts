@@ -9,6 +9,7 @@ import {
   doc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { isOnline, queueOperation, generateTempId, markAsPending } from '../sync/offlineUtils';
 
 export interface FormField {
   id: string;
@@ -109,20 +110,35 @@ export const createFormTemplate = async (
   companyId: string,
   templateData: Omit<FormTemplate, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>
 ): Promise<FormTemplate | null> => {
-  try {
-    const docRef = await addDoc(collection(db, 'formTemplates'), {
-      ...templateData,
-      companyId,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+  const now = Date.now();
+  const templateWithMeta = {
+    ...templateData,
+    companyId,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    const tempId = generateTempId();
+    queueOperation({
+      collection: 'formTemplates',
+      operation: 'create',
+      documentId: tempId,
+      data: templateWithMeta,
     });
 
+    return markAsPending({
+      id: tempId,
+      ...templateWithMeta,
+    }) as any;
+  }
+
+  try {
+    const docRef = await addDoc(collection(db, 'formTemplates'), templateWithMeta);
     return {
       id: docRef.id,
-      ...templateData,
-      companyId,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      ...templateWithMeta,
     };
   } catch (error) {
     console.error('Error creating form template:', error);
@@ -137,11 +153,24 @@ export const updateFormTemplate = async (
   templateId: string,
   updates: Partial<FormTemplate>
 ): Promise<boolean> => {
-  try {
-    await updateDoc(doc(db, 'formTemplates', templateId), {
-      ...updates,
-      updatedAt: Date.now(),
+  const updateData = {
+    ...updates,
+    updatedAt: Date.now(),
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'formTemplates',
+      operation: 'update',
+      documentId: templateId,
+      data: updateData,
     });
+    return true;
+  }
+
+  try {
+    await updateDoc(doc(db, 'formTemplates', templateId), updateData);
     return true;
   } catch (error) {
     console.error('Error updating form template:', error);
@@ -153,6 +182,17 @@ export const updateFormTemplate = async (
  * Delete form template
  */
 export const deleteFormTemplate = async (templateId: string): Promise<boolean> => {
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'formTemplates',
+      operation: 'delete',
+      documentId: templateId,
+      data: {},
+    });
+    return true;
+  }
+
   try {
     await deleteDoc(doc(db, 'formTemplates', templateId));
     return true;
@@ -169,18 +209,34 @@ export const submitForm = async (
   companyId: string,
   submissionData: Omit<FormSubmission, 'id' | 'companyId' | 'createdAt'>
 ): Promise<FormSubmission | null> => {
-  try {
-    const docRef = await addDoc(collection(db, 'formSubmissions'), {
-      ...submissionData,
-      companyId,
-      createdAt: Date.now(),
+  const now = Date.now();
+  const submissionWithMeta = {
+    ...submissionData,
+    companyId,
+    createdAt: now,
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    const tempId = generateTempId();
+    queueOperation({
+      collection: 'formSubmissions',
+      operation: 'create',
+      documentId: tempId,
+      data: submissionWithMeta,
     });
 
+    return markAsPending({
+      id: tempId,
+      ...submissionWithMeta,
+    }) as any;
+  }
+
+  try {
+    const docRef = await addDoc(collection(db, 'formSubmissions'), submissionWithMeta);
     return {
       id: docRef.id,
-      ...submissionData,
-      companyId,
-      createdAt: Date.now(),
+      ...submissionWithMeta,
     };
   } catch (error) {
     console.error('Error submitting form:', error);

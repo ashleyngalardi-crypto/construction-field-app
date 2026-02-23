@@ -10,6 +10,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { isOnline, queueOperation, generateTempId, markAsPending } from '../sync/offlineUtils';
 
 export interface Task {
   id: string;
@@ -120,20 +121,35 @@ export const createTask = async (
   companyId: string,
   taskData: Omit<Task, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>
 ): Promise<Task | null> => {
-  try {
-    const docRef = await addDoc(collection(db, 'tasks'), {
-      ...taskData,
-      companyId,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+  const now = Date.now();
+  const taskWithMeta = {
+    ...taskData,
+    companyId,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    const tempId = generateTempId();
+    queueOperation({
+      collection: 'tasks',
+      operation: 'create',
+      documentId: tempId,
+      data: taskWithMeta,
     });
 
+    return markAsPending({
+      id: tempId,
+      ...taskWithMeta,
+    }) as any;
+  }
+
+  try {
+    const docRef = await addDoc(collection(db, 'tasks'), taskWithMeta);
     return {
       id: docRef.id,
-      ...taskData,
-      companyId,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      ...taskWithMeta,
     };
   } catch (error) {
     console.error('Error creating task:', error);
@@ -148,11 +164,24 @@ export const updateTask = async (
   taskId: string,
   updates: Partial<Task>
 ): Promise<boolean> => {
-  try {
-    await updateDoc(doc(db, 'tasks', taskId), {
-      ...updates,
-      updatedAt: Date.now(),
+  const updateData = {
+    ...updates,
+    updatedAt: Date.now(),
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'tasks',
+      operation: 'update',
+      documentId: taskId,
+      data: updateData,
     });
+    return true;
+  }
+
+  try {
+    await updateDoc(doc(db, 'tasks', taskId), updateData);
     return true;
   } catch (error) {
     console.error('Error updating task:', error);
@@ -167,12 +196,25 @@ export const assignTask = async (
   taskId: string,
   crewMemberId: string
 ): Promise<boolean> => {
-  try {
-    await updateDoc(doc(db, 'tasks', taskId), {
-      assigneeId: crewMemberId,
-      status: 'pending',
-      updatedAt: Date.now(),
+  const updateData = {
+    assigneeId: crewMemberId,
+    status: 'pending',
+    updatedAt: Date.now(),
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'tasks',
+      operation: 'update',
+      documentId: taskId,
+      data: updateData,
     });
+    return true;
+  }
+
+  try {
+    await updateDoc(doc(db, 'tasks', taskId), updateData);
     return true;
   } catch (error) {
     console.error('Error assigning task:', error);
@@ -188,13 +230,26 @@ export const completeTask = async (
   completedBy: string,
   notes?: string
 ): Promise<boolean> => {
-  try {
-    await updateDoc(doc(db, 'tasks', taskId), {
-      status: 'completed',
-      completedAt: Date.now(),
-      completedBy,
-      updatedAt: Date.now(),
+  const updateData = {
+    status: 'completed',
+    completedAt: Date.now(),
+    completedBy,
+    updatedAt: Date.now(),
+  };
+
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'tasks',
+      operation: 'update',
+      documentId: taskId,
+      data: updateData,
     });
+    return true;
+  }
+
+  try {
+    await updateDoc(doc(db, 'tasks', taskId), updateData);
     return true;
   } catch (error) {
     console.error('Error completing task:', error);
@@ -206,6 +261,17 @@ export const completeTask = async (
  * Delete task
  */
 export const deleteTask = async (taskId: string): Promise<boolean> => {
+  // If offline, queue and return optimistic response
+  if (!isOnline()) {
+    queueOperation({
+      collection: 'tasks',
+      operation: 'delete',
+      documentId: taskId,
+      data: {},
+    });
+    return true;
+  }
+
   try {
     await deleteDoc(doc(db, 'tasks', taskId));
     return true;
