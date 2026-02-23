@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { Provider, useDispatch } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -7,14 +7,22 @@ import { store, persistor } from './store';
 import { initNetworkMonitor } from './services/sync/networkMonitor';
 import RootNavigator from './navigation/RootNavigator';
 import { OfflineBanner } from './components/common/OfflineBanner';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ToastContainer, ToastContainerHandle, setToastRef } from './components/common/Toast';
 
 // Keep splash screen visible until we're ready
 SplashScreen.preventAutoHideAsync();
 
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
+  const toastRef = useRef<ToastContainerHandle>(null);
 
   useEffect(() => {
+    // Set global toast reference
+    if (toastRef.current) {
+      setToastRef(toastRef);
+    }
+
     // Hide splash screen once Redux state is rehydrated
     SplashScreen.hideAsync();
 
@@ -23,10 +31,13 @@ const AppContent: React.FC = () => {
   }, [dispatch]);
 
   return (
-    <View style={{ flex: 1 }}>
-      <OfflineBanner />
-      <RootNavigator />
-    </View>
+    <ErrorBoundary>
+      <View style={{ flex: 1 }}>
+        <OfflineBanner />
+        <RootNavigator />
+        <ToastContainer ref={toastRef} />
+      </View>
+    </ErrorBoundary>
   );
 };
 

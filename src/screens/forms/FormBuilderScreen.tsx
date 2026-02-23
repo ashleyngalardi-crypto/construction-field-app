@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  FlatList,
   Switch,
   ActivityIndicator,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { createFormTemplate } from '../../store/slices/adminSlice';
@@ -73,24 +73,24 @@ export const FormBuilderScreen: React.FC<{ onNavigate?: (screen: string) => void
   const [showFieldTypeModal, setShowFieldTypeModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddField = (type: FormField['type']) => {
+  const handleAddField = useCallback((type: FormField['type']) => {
     const newField: FormField = {
       id: `field_${Date.now()}`,
       type,
       label: `Field ${fields.length + 1}`,
       required: false,
     };
-    setFields([...fields, newField]);
+    setFields((prev) => [...prev, newField]);
     setShowFieldTypeModal(false);
-  };
+  }, [fields.length]);
 
-  const handleUpdateField = (id: string, updates: Partial<FormField>) => {
-    setFields(fields.map((f) => (f.id === id ? { ...f, ...updates } : f)));
-  };
+  const handleUpdateField = useCallback((id: string, updates: Partial<FormField>) => {
+    setFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
+  }, []);
 
-  const handleRemoveField = (id: string) => {
-    setFields(fields.filter((f) => f.id !== id));
-  };
+  const handleRemoveField = useCallback((id: string) => {
+    setFields((prev) => prev.filter((f) => f.id !== id));
+  }, []);
 
   const handleCreateForm = async () => {
     if (!formName.trim() || !user?.companyId) {
@@ -245,47 +245,48 @@ export const FormBuilderScreen: React.FC<{ onNavigate?: (screen: string) => void
           </View>
 
           {fields.length > 0 ? (
-            <FlatList
-              data={fields}
-              renderItem={({ item, index }) => (
-                <View key={item.id} style={styles.fieldCard}>
-                  <View style={styles.fieldHeader}>
-                    <Text style={TEXT_STYLES.body12}>{index + 1}. Field</Text>
-                    <TouchableOpacity onPress={() => handleRemoveField(item.id)}>
-                      <Text style={[TEXT_STYLES.body14, { color: COLORS.danger }]}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
+            <View style={{ height: 400 }}>
+              <FlashList
+                data={fields}
+                renderItem={({ item, index }: { item: FormField; index: number }) => (
+                  <View style={styles.fieldCard}>
+                    <View style={styles.fieldHeader}>
+                      <Text style={TEXT_STYLES.body12}>{index + 1}. Field</Text>
+                      <TouchableOpacity onPress={() => handleRemoveField(item.id)}>
+                        <Text style={[TEXT_STYLES.body14, { color: COLORS.danger }]}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
 
-                  <TextInput
-                    style={styles.fieldInput}
-                    placeholder="Field label"
-                    placeholderTextColor={COLORS.textMid}
-                    value={item.label}
-                    onChangeText={(text) => handleUpdateField(item.id, { label: text })}
-                    editable={!isSubmitting}
-                  />
+                    <TextInput
+                      style={styles.fieldInput}
+                      placeholder="Field label"
+                      placeholderTextColor={COLORS.textMid}
+                      value={item.label}
+                      onChangeText={(text) => handleUpdateField(item.id, { label: text })}
+                      editable={!isSubmitting}
+                    />
 
-                  <View style={styles.fieldTypeRow}>
-                    <Text style={[TEXT_STYLES.body12, { color: COLORS.textMid }]}>
-                      Type: {item.type}
-                    </Text>
-                    <View style={styles.fieldRequiredToggle}>
-                      <Text style={TEXT_STYLES.body12}>Required</Text>
-                      <Switch
-                        value={item.required}
-                        onValueChange={(checked) => handleUpdateField(item.id, { required: checked })}
-                        disabled={isSubmitting}
-                        trackColor={{ false: COLORS.border, true: `${COLORS.success}50` }}
-                        thumbColor={item.required ? COLORS.success : COLORS.textLight}
-                      />
+                    <View style={styles.fieldTypeRow}>
+                      <Text style={[TEXT_STYLES.body12, { color: COLORS.textMid }]}>
+                        Type: {item.type}
+                      </Text>
+                      <View style={styles.fieldRequiredToggle}>
+                        <Text style={TEXT_STYLES.body12}>Required</Text>
+                        <Switch
+                          value={item.required}
+                          onValueChange={(checked) => handleUpdateField(item.id, { required: checked })}
+                          disabled={isSubmitting}
+                          trackColor={{ false: COLORS.border, true: `${COLORS.success}50` }}
+                          thumbColor={item.required ? COLORS.success : COLORS.textLight}
+                        />
+                      </View>
                     </View>
                   </View>
-                </View>
-              )}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={{ height: SPACING.md }} />}
-            />
+                )}
+                keyExtractor={(item: FormField) => item.id}
+                ItemSeparatorComponent={() => <View style={{ height: SPACING.md }} />}
+              />
+            </View>
           ) : (
             <View style={styles.emptyFields}>
               <Text style={[TEXT_STYLES.body14, { color: COLORS.textMid }]}>

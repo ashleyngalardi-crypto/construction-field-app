@@ -22,7 +22,7 @@ const priorityColors = {
   low: '#2B6CB0',
 };
 
-export const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle }) => {
+export const TaskItem = React.memo<TaskItemProps>(({ task, onToggle }) => {
   const getPriorityLabel = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -92,7 +92,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle }) => {
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

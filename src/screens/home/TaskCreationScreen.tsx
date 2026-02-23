@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  FlatList,
   ActivityIndicator,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchCrewMembers, createNewTask, assignTaskToMember } from '../../store/slices/adminSlice';
@@ -37,6 +37,16 @@ export const TaskCreationScreen: React.FC<{ onNavigate?: (screen: string) => voi
       dispatch(fetchCrewMembers(user.companyId));
     }
   }, [user?.companyId, dispatch]);
+
+  const handleSelectAssignee = useCallback((crewId: string) => {
+    setSelectedAssignee(crewId);
+    setShowAssigneeModal(false);
+  }, []);
+
+  const handleSelectPriority = useCallback((p: 'high' | 'medium' | 'low') => {
+    setPriority(p);
+    setShowPriorityModal(false);
+  }, []);
 
   const handleCreateTask = async () => {
     if (!taskText.trim() || !user?.companyId) {
@@ -228,10 +238,7 @@ export const TaskCreationScreen: React.FC<{ onNavigate?: (screen: string) => voi
               <TouchableOpacity
                 key={p}
                 style={[styles.modalOption, priority === p && styles.modalOptionSelected]}
-                onPress={() => {
-                  setPriority(p);
-                  setShowPriorityModal(false);
-                }}
+                onPress={() => handleSelectPriority(p)}
               >
                 <View style={[styles.priorityIndicator, { backgroundColor: priorityColors[p] }]} />
                 <Text style={[TEXT_STYLES.body14, priority === p && { color: COLORS.primary }]}>
@@ -256,39 +263,36 @@ export const TaskCreationScreen: React.FC<{ onNavigate?: (screen: string) => voi
             {isLoading ? (
               <ActivityIndicator size="large" color={COLORS.primary} />
             ) : crew.length > 0 ? (
-              <FlatList
-                data={crew}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.modalOption,
-                      selectedAssignee === item.id && styles.modalOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedAssignee(item.id);
-                      setShowAssigneeModal(false);
-                    }}
-                  >
-                    <View style={styles.miniAvatar}>
-                      <Text style={[TEXT_STYLES.label11, { color: COLORS.white }]}>
-                        {item.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
-                      </Text>
-                    </View>
-                    <View>
-                      <Text style={TEXT_STYLES.body14}>{item.name}</Text>
-                      <Text style={[TEXT_STYLES.label11, { color: COLORS.textMid }]}>
-                        {item.role}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-                keyExtractor={(item) => item.id}
-                scrollEnabled
-                nestedScrollEnabled
-              />
+              <View style={{ height: 400 }}>
+                <FlashList
+                  data={crew}
+                  renderItem={({ item }: { item: typeof crew[0] }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalOption,
+                        selectedAssignee === item.id && styles.modalOptionSelected,
+                      ]}
+                      onPress={() => handleSelectAssignee(item.id)}
+                    >
+                      <View style={styles.miniAvatar}>
+                        <Text style={[TEXT_STYLES.label11, { color: COLORS.white }]}>
+                          {item.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={TEXT_STYLES.body14}>{item.name}</Text>
+                        <Text style={[TEXT_STYLES.label11, { color: COLORS.textMid }]}>
+                          {item.role}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={(item: typeof crew[0]) => item.id}
+                />
+              </View>
             ) : (
               <Text style={[TEXT_STYLES.body14, { color: COLORS.textMid }]}>
                 No crew members available

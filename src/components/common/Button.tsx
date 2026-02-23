@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES, TOUCH_TARGET, ELEVATION } from '../../theme';
+import { haptics } from '../../services/haptics/haptics';
 
 interface ButtonProps {
   onPress: () => void;
@@ -54,9 +55,16 @@ export const Button: React.FC<ButtonProps> = ({
     ...(disabled && { opacity: 0.5 }),
   };
 
+  const handlePress = useCallback(async () => {
+    // Trigger haptic feedback
+    await haptics.tap();
+    // Call the parent onPress handler
+    onPress();
+  }, [onPress]);
+
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
       style={[styles.button, computedStyle, style]}
       testID={testID}

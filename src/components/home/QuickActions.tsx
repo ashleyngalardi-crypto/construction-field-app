@@ -17,7 +17,7 @@ interface QuickActionsProps {
   onPunchPress?: () => void;
 }
 
-export const QuickActions: React.FC<QuickActionsProps> = ({
+export const QuickActions = React.memo<QuickActionsProps>(({
   onPhotoPress,
   onLogPress,
   onReportPress,
@@ -71,7 +71,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       ))}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
