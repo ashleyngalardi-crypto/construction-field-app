@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   SafeAreaView,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
   RefreshControl,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchCrewMembers, setSelectedCrewMember } from '../../store/slices/adminSlice';
@@ -45,14 +45,14 @@ export const CrewListScreen: React.FC<{ onNavigate?: (screen: string, params?: a
       member.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCrewMemberPress = (memberId: string) => {
+  const handleCrewMemberPress = useCallback((memberId: string) => {
     dispatch(setSelectedCrewMember(memberId));
     onNavigate?.('CrewDetail', { memberId });
-  };
+  }, [dispatch, onNavigate]);
 
-  const renderCrewMember = (member: any) => (
+  // Memoized crew member card component
+  const CrewMemberCard = React.memo(({ member }: { member: any }) => (
     <TouchableOpacity
-      key={member.id}
       style={styles.crewCard}
       onPress={() => handleCrewMemberPress(member.id)}
     >
@@ -85,7 +85,7 @@ export const CrewListScreen: React.FC<{ onNavigate?: (screen: string, params?: a
         )}
       </View>
     </TouchableOpacity>
-  );
+  ));
 
   if (isLoading && crew.length === 0) {
     return (
@@ -99,50 +99,68 @@ export const CrewListScreen: React.FC<{ onNavigate?: (screen: string, params?: a
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={TEXT_STYLES.h2}>Crew Management</Text>
-          <Text style={[TEXT_STYLES.body13, { color: COLORS.textMid }]}>
-            {crew.length} member{crew.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
+      {filteredCrew.length > 0 ? (
+        <FlashList
+          data={filteredCrew}
+          renderItem={({ item }) => <CrewMemberCard member={item} />}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={
+            <>
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={TEXT_STYLES.h2}>Crew Management</Text>
+                <Text style={[TEXT_STYLES.body13, { color: COLORS.textMid }]}>
+                  {crew.length} member{crew.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or role..."
-            placeholderTextColor={COLORS.textMid}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+              {/* Search Bar */}
+              <View style={styles.searchContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search by name or role..."
+                  placeholderTextColor={COLORS.textMid}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
 
-        {/* Crew List */}
-        <View style={styles.section}>
-          {filteredCrew.length > 0 ? (
-            <FlatList
-              data={filteredCrew}
-              renderItem={({ item }) => renderCrewMember(item)}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={{ height: SPACING.sm }} />}
+              <View style={styles.section} />
+            </>
+          }
+          ListFooterComponent={<View style={{ height: SPACING.xxxl }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        />
+      ) : (
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={TEXT_STYLES.h2}>Crew Management</Text>
+            <Text style={[TEXT_STYLES.body13, { color: COLORS.textMid }]}>
+              {crew.length} member{crew.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or role..."
+              placeholderTextColor={COLORS.textMid}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
             />
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={[TEXT_STYLES.body14, { color: COLORS.textMid }]}>
-                {searchQuery ? 'No crew members found' : 'No crew members'}
-              </Text>
-            </View>
-          )}
-        </View>
+          </View>
 
-        <View style={{ height: SPACING.xxxl }} />
-      </ScrollView>
+          <View style={styles.emptyState}>
+            <Text style={[TEXT_STYLES.body14, { color: COLORS.textMid }]}>
+              {searchQuery ? 'No crew members found' : 'No crew members'}
+            </Text>
+          </View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };

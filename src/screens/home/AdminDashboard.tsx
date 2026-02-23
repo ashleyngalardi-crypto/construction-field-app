@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   ScrollView,
   SafeAreaView,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchCrewMembers, fetchCrewWorkloads, fetchJobSiteTasks } from '../../store/slices/adminSlice';
@@ -43,38 +43,40 @@ export const AdminDashboard: React.FC<{ onNavigate?: (screen: string) => void }>
     }
   }, [crew, dispatch]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     if (user?.companyId) {
       await dispatch(fetchCrewMembers(user.companyId));
     }
     setRefreshing(false);
-  };
+  }, [user?.companyId, dispatch]);
 
-  // Combine crew and workload data
-  const crewWithWorkload: CrewWorkloadDisplay[] = crew.map((member) => {
-    const workload = crewWorkloads.find((w) => w.crewMemberId === member.id);
-    return {
-      crewMemberId: member.id,
-      name: member.name,
-      role: member.role,
-      openTasks: workload?.openTasks || 0,
-      completedTasks: workload?.completedTasks || 0,
-      inspectionsPending: workload?.inspectionsPending || 0,
-      averageCompletionTime: workload?.averageCompletionTime || 0,
-    };
-  });
+  // Memoize crew workload calculation
+  const crewWithWorkload: CrewWorkloadDisplay[] = useMemo(() => {
+    return crew.map((member) => {
+      const workload = crewWorkloads.find((w) => w.crewMemberId === member.id);
+      return {
+        crewMemberId: member.id,
+        name: member.name,
+        role: member.role,
+        openTasks: workload?.openTasks || 0,
+        completedTasks: workload?.completedTasks || 0,
+        inspectionsPending: workload?.inspectionsPending || 0,
+        averageCompletionTime: workload?.averageCompletionTime || 0,
+      };
+    });
+  }, [crew, crewWorkloads]);
 
-  const totalStats = {
+  const totalStats = useMemo(() => ({
     totalCrew: crew.length,
     openTasks: crewWithWorkload.reduce((sum, c) => sum + c.openTasks, 0),
     completedTasks: crewWithWorkload.reduce((sum, c) => sum + c.completedTasks, 0),
     pendingInspections: crewWithWorkload.reduce((sum, c) => sum + c.inspectionsPending, 0),
-  };
+  }), [crew.length, crewWithWorkload]);
 
-  const renderWorkloadItem = (item: CrewWorkloadDisplay) => (
+  // Memoized workload card component
+  const WorkloadCard = React.memo(({ item }: { item: CrewWorkloadDisplay }) => (
     <TouchableOpacity
-      key={item.crewMemberId}
       style={styles.workloadCard}
       onPress={() => onNavigate?.('CrewDetail')}
     >
@@ -123,7 +125,7 @@ export const AdminDashboard: React.FC<{ onNavigate?: (screen: string) => void }>
         </Text>
       </View>
     </TouchableOpacity>
-  );
+  ));
 
   if (isLoading && crew.length === 0) {
     return (
@@ -187,12 +189,10 @@ export const AdminDashboard: React.FC<{ onNavigate?: (screen: string) => void }>
           )}
 
           {crewWithWorkload.length > 0 ? (
-            <FlatList
+            <FlashList
               data={crewWithWorkload}
-              renderItem={({ item }) => renderWorkloadItem(item)}
+              renderItem={({ item }) => <WorkloadCard item={item} />}
               keyExtractor={(item) => item.crewMemberId}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={{ height: SPACING.sm }} />}
             />
           ) : (
             <View style={styles.emptyState}>
