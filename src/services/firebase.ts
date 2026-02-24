@@ -18,15 +18,36 @@ import {
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
-// TODO: Replace with your actual Firebase config from Firebase Console
+// Uses environment variables for different environments (development/production)
 const firebaseConfig = {
-  apiKey: 'AIzaSyDemoKeyForDevelopment123',
-  authDomain: 'construction-field-app.firebaseapp.com',
-  projectId: 'construction-field-app',
-  storageBucket: 'construction-field-app.appspot.com',
-  messagingSenderId: '123456789',
-  appId: '1:123456789:web:abc123def456',
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
+
+// Validate that all required environment variables are set
+const requiredEnvVars = [
+  'EXPO_PUBLIC_FIREBASE_API_KEY',
+  'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
+  'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'EXPO_PUBLIC_FIREBASE_APP_ID',
+];
+
+const missingEnvVars = requiredEnvVars.filter(
+  (envVar) => !process.env[envVar]
+);
+
+if (missingEnvVars.length > 0) {
+  console.warn(
+    `Missing Firebase environment variables: ${missingEnvVars.join(', ')}. ` +
+    'Please add them to your .env.local or .env.production file.'
+  );
+}
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
@@ -35,6 +56,18 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Initialize Firebase Analytics (only on web, not in React Native)
+let analytics = null;
+if (typeof window !== 'undefined') {
+  try {
+    const { getAnalytics } = require('firebase/analytics');
+    analytics = getAnalytics(app);
+  } catch (error) {
+    console.log('Firebase Analytics not available in this environment');
+  }
+}
+export { analytics };
 
 // Enable offline persistence for Firestore
 import { enableIndexedDbPersistence } from 'firebase/firestore';

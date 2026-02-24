@@ -13,7 +13,16 @@
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "test:coverage": "jest --coverage",
     "test:update": "jest --updateSnapshot",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "build:ios:dev": "eas build --platform ios --profile development",
+    "build:ios:preview": "eas build --platform ios --profile preview",
+    "build:ios:prod": "eas build --platform ios --profile production",
+    "build:android:dev": "eas build --platform android --profile development",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "build:android:prod": "eas build --platform android --profile production",
+    "build:all:prod": "eas build --platform all --profile production",
+    "submit:ios": "eas submit --platform ios",
+    "submit:android": "eas submit --platform android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
