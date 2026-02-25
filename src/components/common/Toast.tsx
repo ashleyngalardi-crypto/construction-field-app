@@ -1,140 +1,225 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
-import { COLORS, SPACING, TEXT_STYLES, RADIUS } from '../../theme';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  SafeAreaView,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
+import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
-export interface ToastMessage {
+interface ToastMessage {
   id: string;
-  type: ToastType;
   message: string;
+  type: ToastType;
   duration?: number;
 }
 
 interface ToastProps {
-  type: ToastType;
+  visible: boolean;
   message: string;
+  type?: ToastType;
   duration?: number;
-  onDismiss?: () => void;
+  onHide?: () => void;
 }
 
-/**
- * Individual Toast component
- */
-const ToastItem: React.FC<ToastProps> = ({ type, message, duration = 3000, onDismiss }) => {
-  const [opacity] = useState(new Animated.Value(0));
+// Global toast manager for easier usage
+let toastQueue: ToastMessage[] = [];
+let toastListeners: Array<(messages: ToastMessage[]) => void> = [];
+
+export const addToast = (message: string, type: ToastType = 'info', duration: number = 3000) => {
+  const id = `toast_${Date.now()}_${Math.random()}`;
+  const toastMessage: ToastMessage = {
+    id,
+    message,
+    type,
+    duration,
+  };
+
+  toastQueue.push(toastMessage);
+  toastListeners.forEach((listener) => listener([...toastQueue]));
+
+  if (duration > 0) {
+    setTimeout(() => {
+      toastQueue = toastQueue.filter((t) => t.id !== id);
+      toastListeners.forEach((listener) => listener([...toastQueue]));
+    }, duration);
+  }
+
+  return id;
+};
+
+export const removeToast = (id: string) => {
+  toastQueue = toastQueue.filter((t) => t.id !== id);
+  toastListeners.forEach((listener) => listener([...toastQueue]));
+};
+
+export const showSuccess = (message: string, duration: number = 3000) => {
+  return addToast(message, 'success', duration);
+};
+
+export const showError = (message: string, duration: number = 3000) => {
+  return addToast(message, 'error', duration);
+};
+
+export const showInfo = (message: string, duration: number = 3000) => {
+  return addToast(message, 'info', duration);
+};
+
+export const showWarning = (message: string, duration: number = 3000) => {
+  return addToast(message, 'warning', duration);
+};
+
+// Single Toast Display Component
+export const Toast: React.FC<ToastProps> = ({
+  visible,
+  message,
+  type = 'info',
+  duration = 3000,
+  onHide,
+}) => {
+  const slideAnim = useRef(new Animated.Value(300)).current;
 
   useEffect(() => {
-    // Animate in
-    Animated.timing(opacity, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    // Auto dismiss
-    const timer = setTimeout(() => {
-      Animated.timing(opacity, {
+    if (visible) {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 300,
         useNativeDriver: true,
-      }).start(() => onDismiss?.());
-    }, duration);
+        tension: 50,
+        friction: 7,
+      }).start();
 
-    return () => clearTimeout(timer);
-  }, [duration, opacity, onDismiss]);
+      if (duration > 0) {
+        const timer = setTimeout(() => {
+          Animated.timing(slideAnim, {
+            toValue: 300,
+            duration: 300,
+            useNativeDriver: true,
+          }).start(() => {
+            onHide?.();
+          });
+        }, duration);
 
-  const getIconAndColor = () => {
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [visible, slideAnim, duration, onHide]);
+
+  const getTypeStyles = () => {
     switch (type) {
       case 'success':
-        return { icon: '✓', bgColor: COLORS.success, color: 'white' };
+        return { backgroundColor: COLORS.success, icon: '✓' };
       case 'error':
-        return { icon: '✕', bgColor: COLORS.danger, color: 'white' };
+        return { backgroundColor: COLORS.danger, icon: '✕' };
       case 'warning':
-        return { icon: '!', bgColor: COLORS.warning, color: 'white' };
+        return { backgroundColor: '#FFA502', icon: '!' };
       case 'info':
       default:
-        return { icon: 'ℹ', bgColor: COLORS.info, color: 'white' };
+        return { backgroundColor: COLORS.primary, icon: 'ℹ' };
     }
   };
 
-  const { icon, bgColor, color } = getIconAndColor();
+  const typeStyles = getTypeStyles();
 
   return (
-    <Animated.View style={[styles.toastContainer, { opacity }]}>
-      <View style={[styles.toast, { backgroundColor: bgColor }]}>
-        <View style={styles.iconContainer}>
-          <Text style={[styles.icon, { color }]}>{icon}</Text>
-        </View>
-        <Text style={[styles.message, { color }]}>{message}</Text>
-        <TouchableOpacity
-          onPress={onDismiss}
-          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-        >
-          <Text style={[styles.closeButton, { color }]}>×</Text>
-        </TouchableOpacity>
+    <Animated.View
+      style={[
+        styles.toastContainer,
+        {
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <View style={[styles.toast, { backgroundColor: typeStyles.backgroundColor }]}>
+        <Text style={styles.icon}>{typeStyles.icon}</Text>
+        <Text style={[styles.message, TEXT_STYLES.body14]} numberOfLines={2}>
+          {message}
+        </Text>
       </View>
     </Animated.View>
   );
 };
 
-/**
- * Toast Container - manages multiple toasts
- */
-interface ToastContainerProps {
-  ref?: React.Ref<ToastContainerHandle>;
-}
+// Toast Container Component - Use this at the root of your app
+export const ToastContainer: React.FC = () => {
+  const [messages, setMessages] = useState<ToastMessage[]>([]);
 
-export interface ToastContainerHandle {
-  show: (type: ToastType, message: string, duration?: number) => void;
-  success: (message: string, duration?: number) => void;
-  error: (message: string, duration?: number) => void;
-  warning: (message: string, duration?: number) => void;
-  info: (message: string, duration?: number) => void;
-}
+  useEffect(() => {
+    const listener = (msgs: ToastMessage[]) => {
+      setMessages([...msgs]);
+    };
 
-export const ToastContainer = React.forwardRef<ToastContainerHandle, ToastContainerProps>(
-  (props, ref) => {
-    const [toasts, setToasts] = useState<ToastMessage[]>([]);
+    toastListeners.push(listener);
 
-    const show = useCallback((type: ToastType, message: string, duration?: number) => {
-      const id = `${Date.now()}-${Math.random()}`;
-      setToasts((prev) => [...prev, { id, type, message, duration }]);
-    }, []);
+    return () => {
+      toastListeners = toastListeners.filter((l) => l !== listener);
+    };
+  }, []);
 
-    const dismiss = useCallback((id: string) => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, []);
+  return (
+    <View style={styles.container} pointerEvents="box-none">
+      {messages.map((msg, index) => (
+        <View
+          key={msg.id}
+          style={[
+            styles.toastWrapper,
+            {
+              bottom: index * 70 + 20,
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <View style={[styles.toast, { backgroundColor: getToastColor(msg.type) }]}>
+            <Text style={styles.icon}>{getToastIcon(msg.type)}</Text>
+            <View style={styles.messageContainer}>
+              <Text style={[styles.message, TEXT_STYLES.body14]} numberOfLines={2}>
+                {msg.message}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => removeToast(msg.id)}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeIcon}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
 
-    React.useImperativeHandle(
-      ref,
-      () => ({
-        show,
-        success: (message, duration) => show('success', message, duration),
-        error: (message, duration) => show('error', message, duration),
-        warning: (message, duration) => show('warning', message, duration),
-        info: (message, duration) => show('info', message, duration),
-      }),
-      [show]
-    );
-
-    return (
-      <View style={styles.container} pointerEvents="box-none">
-        {toasts.map((toast) => (
-          <ToastItem
-            key={toast.id}
-            type={toast.type}
-            message={toast.message}
-            duration={toast.duration}
-            onDismiss={() => dismiss(toast.id)}
-          />
-        ))}
-      </View>
-    );
+function getToastColor(type: ToastType): string {
+  switch (type) {
+    case 'success':
+      return COLORS.success;
+    case 'error':
+      return COLORS.danger;
+    case 'warning':
+      return '#FFA502';
+    case 'info':
+    default:
+      return COLORS.primary;
   }
-);
+}
 
-ToastContainer.displayName = 'ToastContainer';
+function getToastIcon(type: ToastType): string {
+  switch (type) {
+    case 'success':
+      return '✓';
+    case 'error':
+      return '✕';
+    case 'warning':
+      return '!';
+    case 'info':
+    default:
+      return 'ℹ';
+  }
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -144,70 +229,55 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     pointerEvents: 'box-none',
-    justifyContent: 'flex-end',
-    paddingBottom: SPACING.lg,
+    zIndex: 9999,
+  },
+  toastWrapper: {
+    position: 'absolute',
+    left: SPACING.md,
+    right: SPACING.md,
+    pointerEvents: 'auto',
   },
   toastContainer: {
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.sm,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
   },
   toast: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    gap: SPACING.md,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
   },
-  iconContainer: {
-    marginRight: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 24,
-  },
   icon: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    minWidth: 24,
+    textAlign: 'center',
+  },
+  messageContainer: {
+    flex: 1,
   },
   message: {
-    flex: 1,
-    ...TEXT_STYLES.body13,
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   closeButton: {
-    fontSize: 20,
-    marginLeft: SPACING.sm,
-    fontWeight: '300',
+    padding: SPACING.xs,
+  },
+  closeIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    opacity: 0.7,
   },
 });
-
-// Global toast instance
-let toastRef: React.RefObject<ToastContainerHandle> | null = null;
-
-export const setToastRef = (ref: React.RefObject<ToastContainerHandle>) => {
-  toastRef = ref;
-};
-
-export const showToast = (type: ToastType, message: string, duration?: number) => {
-  toastRef?.current?.show(type, message, duration);
-};
-
-export const showSuccessToast = (message: string, duration?: number) => {
-  toastRef?.current?.success(message, duration);
-};
-
-export const showErrorToast = (message: string, duration?: number) => {
-  toastRef?.current?.error(message, duration);
-};
-
-export const showWarningToast = (message: string, duration?: number) => {
-  toastRef?.current?.warning(message, duration);
-};
-
-export const showInfoToast = (message: string, duration?: number) => {
-  toastRef?.current?.info(message, duration);
-};
