@@ -1,11 +1,16 @@
-import { store } from '../../store';
 import { addToQueue } from '../../store/slices/offlineSlice';
 import { SyncQueueItem } from '../../types';
+
+// Lazy-load store to avoid circular dependency
+function getStore() {
+  return require('../../store').store;
+}
 
 /**
  * Check if currently online
  */
 export function isOnline(): boolean {
+  const store = getStore();
   const state = store.getState();
   return state.offline.isOnline;
 }
@@ -16,6 +21,7 @@ export function isOnline(): boolean {
 export function queueOperation(
   item: Omit<SyncQueueItem, 'id' | 'timestamp' | 'retryCount'>
 ): void {
+  const store = getStore();
   const queueItem: SyncQueueItem = {
     id: generateTempId(),
     ...item,
