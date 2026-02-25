@@ -19,6 +19,7 @@ import { CalendarGrid } from '../../components/home/CalendarGrid';
 import { SiteInfoCard } from '../../components/home/SiteInfoCard';
 import { TaskItem } from '../../components/home/TaskItem';
 import { QuickActions } from '../../components/home/QuickActions';
+import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 
 interface TaskData {
   id: number;
@@ -163,11 +164,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         {/* Loading State */}
         {isLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={[styles.loadingText, TEXT_STYLES.body14]}>
-              Loading tasks...
-            </Text>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, TEXT_STYLES.h4]}>Tasks</Text>
+            <LoadingSkeleton type="task" count={3} spacing={SPACING.sm} />
           </View>
         )}
 

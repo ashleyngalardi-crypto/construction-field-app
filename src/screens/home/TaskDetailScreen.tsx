@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -16,6 +15,7 @@ import { Task } from '../../services/api/taskService';
 import { getFormTemplates } from '../../services/api/formService';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 import { Button } from '../../components/common/Button';
+import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 
 type TaskDetailScreenProps = NativeStackScreenProps<any, 'TaskDetail'>;
 
@@ -88,11 +88,9 @@ export const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({
   if (!task) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={[styles.loadingText, TEXT_STYLES.body14]}>
-            Loading task details...
-          </Text>
+        <View style={styles.loadingContent}>
+          <Text style={[styles.loadingTitle, TEXT_STYLES.h2]}>Task Details</Text>
+          <LoadingSkeleton type="task" count={4} spacing={SPACING.md} />
         </View>
       </SafeAreaView>
     );
@@ -324,6 +322,15 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: SPACING.md,
     color: COLORS.textLight,
+  },
+  loadingContent: {
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+  },
+  loadingTitle: {
+    color: COLORS.text,
+    marginBottom: SPACING.lg,
   },
   statusBadge: {
     flexDirection: 'row',
