@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, Text } from 'react-native';
 import { Provider, useDispatch } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,6 +16,15 @@ if (Platform.OS !== 'web') {
 }
 
 const AppContent: React.FC = () => {
+  // Minimal web test - skip everything
+  if (Platform.OS === 'web') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#ff0000' }}>
+        <Text style={{ fontSize: 24, color: 'white', padding: 20 }}>🔴 RED TEST - App is rendering!</Text>
+      </View>
+    );
+  }
+
   const dispatch = useDispatch();
   const toastRef = useRef<ToastContainerHandle>(null);
 
@@ -38,7 +47,7 @@ const AppContent: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
         <OfflineBanner />
         <RootNavigator />
         <ToastContainer ref={toastRef} />
@@ -48,6 +57,11 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
+  // On web, skip Redux completely to isolate the issue
+  if (Platform.OS === 'web') {
+    return <AppContent />;
+  }
+
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
