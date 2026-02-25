@@ -35,6 +35,7 @@ export function queueOperation(
  * Get current online status (for reactive updates, use useSelector in components)
  */
 export function getNetworkStatus() {
+  const store = getStore();
   const state = store.getState();
   return {
     isOnline: state.offline.isOnline,
