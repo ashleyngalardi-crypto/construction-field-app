@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 import { RootState } from '../../store';
@@ -40,9 +41,11 @@ interface InspectionData {
 type HomeScreenProps = NativeStackScreenProps<any, 'HomeMain'>;
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const dispatch = useDispatch();
   const [selectedDate, setSelectedDate] = useState<number | null>(22); // Default to today
   const [tasksVisible, setTasksVisible] = useState(true);
   const [inspectionsVisible, setInspectionsVisible] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Redux selectors
   const user = useSelector((state: RootState) => state.auth.user);
@@ -90,6 +93,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     // TODO: Load data for selected date
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      // TODO: Dispatch Redux action to fetch latest tasks
+      // For now, just simulate a refresh delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('Tasks refreshed');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
   const completedCount = todaysTasks.filter((t) => t.status === 'completed').length;
   const completedInspections = todaysInspections.filter(
     (i) => i.status === 'complete'
@@ -103,6 +118,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.primary}
+            progressBackgroundColor={COLORS.card}
+          />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
