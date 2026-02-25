@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { webCompatibleStorage } from './webStorage';
 import authReducer from './slices/authSlice';
 import adminReducer from './slices/adminSlice';
 import offlineReducer from './slices/offlineSlice';
@@ -8,7 +8,7 @@ import offlineReducer from './slices/offlineSlice';
 // Persist configuration
 const persistConfig = {
   key: 'root',
-  storage: AsyncStorage,
+  storage: webCompatibleStorage,
   whitelist: ['auth', 'admin', 'offline'], // Persist auth, admin data, and offline queue
 };
 
