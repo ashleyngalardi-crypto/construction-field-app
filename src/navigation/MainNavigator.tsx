@@ -14,6 +14,7 @@ import { FormFillingScreen } from '../screens/forms/FormFillingScreen';
 import { FormReviewScreen } from '../screens/forms/FormReviewScreen';
 import { TaskDetailScreen } from '../screens/home/TaskDetailScreen';
 import { CrewMemberDetailScreen } from '../screens/crew/CrewMemberDetailScreen';
+import { PhotosTab } from '../screens/photos/PhotosTab';
 import { BottomTabBar } from '../components/navigation/BottomTabBar';
 
 export type MainTabParamList = {
@@ -125,7 +126,7 @@ export const MainNavigator = () => {
       />
       <Tab.Screen
         name="Photos"
-        component={() => <PlaceholderScreen title="Photos Screen" />}
+        component={PhotosTab}
       />
       <Tab.Screen
         name="Crew"
