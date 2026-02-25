@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   FlatList,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useSelector } from 'react-redux';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 import { RootState } from '../../store';
 import { CalendarGrid } from '../../components/home/CalendarGrid';
@@ -35,102 +37,66 @@ interface InspectionData {
   assignee?: string;
 }
 
-export const HomeScreen: React.FC = () => {
+type HomeScreenProps = NativeStackScreenProps<any, 'HomeMain'>;
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState<number | null>(22); // Default to today
-  const user = useSelector((state: RootState) => state.auth.user);
   const [tasksVisible, setTasksVisible] = useState(true);
   const [inspectionsVisible, setInspectionsVisible] = useState(true);
 
-  // Mock data - will be replaced with Redux selectors
+  // Redux selectors
+  const user = useSelector((state: RootState) => state.auth.user);
+  const todaysTasks = useSelector((state: RootState) => state.admin.todaysTasks);
+  const isLoading = useSelector((state: RootState) => state.admin.isLoading);
+
+  // Fallback site info - will be replaced with real data when available
   const siteInfo = {
-    name: 'Downtown Plaza Project',
-    address: '123 Main St, New York, NY',
+    name: user?.companyId ? `${user.fullName}'s Worksite` : 'Today\'s Schedule',
+    address: 'Active jobsite',
     shift: '6:00 AM – 3:30 PM',
-    crewCount: 12,
+    crewCount: 1, // Placeholder
     weather: {
-      temp: '68°F',
-      icon: '☀️',
+      temp: '72°F',
+      icon: '🌤️',
     },
     tasks: {
-      completed: 8,
-      total: 14,
+      completed: todaysTasks.filter((t) => t.status === 'completed').length,
+      total: todaysTasks.length,
     },
   };
 
-  const todaysTasks: TaskData[] = [
-    {
-      id: 1,
-      text: 'Complete foundation inspection',
-      priority: 'high',
-      done: false,
-      time: '9:00 AM',
-      assignee: 'John D.',
-    },
-    {
-      id: 2,
-      text: 'Install steel framing - Section A',
-      priority: 'high',
-      done: false,
-      time: '10:30 AM',
-      assignee: 'Mike R.',
-    },
-    {
-      id: 3,
-      text: 'Daily safety briefing',
-      priority: 'medium',
-      done: true,
-      time: '8:00 AM',
-    },
-    {
-      id: 4,
-      text: 'Material delivery sign-off',
-      priority: 'medium',
-      done: false,
-      time: '2:00 PM',
-      assignee: 'Sarah L.',
-    },
-    {
-      id: 5,
-      text: 'Cleanup and equipment check',
-      priority: 'low',
-      done: false,
-      time: '3:00 PM',
-    },
-  ];
+  // For now, we'll keep mock inspections since they're not in the schema yet
+  const todaysInspections: InspectionData[] = [];
 
-  const todaysInspections: InspectionData[] = [
-    {
-      id: 1,
-      equipment: 'Excavator - CAT 320',
-      status: 'pending',
-      note: 'Daily pre-start check',
-      time: '7:30 AM',
-      assignee: 'Tom',
+  // Task navigation handler
+  const handleTaskPress = useCallback(
+    (taskId: string) => {
+      // Navigate to task detail screen
+      navigation.navigate('TaskDetail', { taskId });
     },
-    {
-      id: 2,
-      equipment: 'Concrete Pump Truck',
-      status: 'complete',
-      note: 'Safety inspection passed',
-      time: '9:15 AM',
-      assignee: 'Dave',
+    [navigation]
+  );
+
+  const handleTaskToggle = useCallback(
+    (taskId: string) => {
+      // TODO: Dispatch Redux action to update task status
+      console.log('Toggle task:', taskId);
     },
-  ];
+    []
+  );
 
-  const handleTaskToggle = (taskId: number) => {
-    // TODO: Dispatch Redux action to update task
-    console.log('Toggle task:', taskId);
-  };
-
-  const handleDateSelect = (day: number | null) => {
+  const handleDateSelect = useCallback((day: number | null) => {
     setSelectedDate(day);
     // TODO: Load data for selected date
-  };
+  }, []);
 
-  const completedCount = todaysTasks.filter((t) => t.done).length;
+  const completedCount = todaysTasks.filter((t) => t.status === 'completed').length;
   const completedInspections = todaysInspections.filter(
     (i) => i.status === 'complete'
   ).length;
+
+  // Show empty state if no tasks
+  const showEmpty = !isLoading && todaysTasks.length === 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -172,37 +138,79 @@ export const HomeScreen: React.FC = () => {
           <QuickActions />
         </View>
 
-        {/* Tasks Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => setTasksVisible(!tasksVisible)}
-          >
-            <Text style={[styles.sectionTitle, TEXT_STYLES.h4]}>
-              Tasks ({completedCount}/{todaysTasks.length})
+        {/* Loading State */}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.loadingText, TEXT_STYLES.body14]}>
+              Loading tasks...
             </Text>
-            <Text
-              style={[
-                styles.chevron,
-                { transform: [{ rotate: tasksVisible ? '90deg' : '0deg' }] },
-              ]}
-            >
-              ›
-            </Text>
-          </TouchableOpacity>
+          </View>
+        )}
 
-          {tasksVisible && (
-            <View style={styles.tasksList}>
-              {todaysTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggle={() => handleTaskToggle(task.id)}
-                />
-              ))}
-            </View>
-          )}
-        </View>
+        {/* Empty State */}
+        {showEmpty && (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyIcon]}>📋</Text>
+            <Text style={[styles.emptyTitle, TEXT_STYLES.body14]}>
+              No tasks assigned
+            </Text>
+            <Text style={[styles.emptySubtitle, TEXT_STYLES.body12]}>
+              Check back later for assignments
+            </Text>
+          </View>
+        )}
+
+        {/* Tasks Section */}
+        {!isLoading && todaysTasks.length > 0 && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={() => setTasksVisible(!tasksVisible)}
+            >
+              <Text style={[styles.sectionTitle, TEXT_STYLES.h4]}>
+                Tasks ({completedCount}/{todaysTasks.length})
+              </Text>
+              <Text
+                style={[
+                  styles.chevron,
+                  { transform: [{ rotate: tasksVisible ? '90deg' : '0deg' }] },
+                ]}
+              >
+                ›
+              </Text>
+            </TouchableOpacity>
+
+            {tasksVisible && (
+              <View style={styles.tasksList}>
+                {todaysTasks.map((task) => (
+                  <TouchableOpacity
+                    key={task.id}
+                    onPress={() => handleTaskPress(task.id)}
+                    activeOpacity={0.7}
+                  >
+                    <TaskItem
+                      task={{
+                        id: parseInt(task.id) || 0,
+                        text: task.text,
+                        priority: task.priority as 'high' | 'medium' | 'low',
+                        done: task.status === 'completed',
+                        time: task.scheduledTime
+                          ? new Date(task.scheduledTime).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'TBD',
+                        assignee: task.assigneeId || 'Unassigned',
+                      }}
+                      onToggle={() => handleTaskToggle(task.id)}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Inspections Section */}
         <View style={styles.section}>
@@ -323,6 +331,37 @@ const styles = StyleSheet.create({
   tasksList: {
     gap: SPACING.sm,
     paddingTop: SPACING.md,
+  },
+  loadingContainer: {
+    paddingVertical: SPACING.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: SPACING.lg,
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    color: COLORS.textLight,
+  },
+  emptyContainer: {
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    marginVertical: SPACING.lg,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: SPACING.md,
+  },
+  emptyTitle: {
+    color: COLORS.text,
+    fontWeight: '600',
+    marginBottom: SPACING.xs,
+  },
+  emptySubtitle: {
+    color: COLORS.textLight,
   },
   inspectionsList: {
     gap: SPACING.sm,
