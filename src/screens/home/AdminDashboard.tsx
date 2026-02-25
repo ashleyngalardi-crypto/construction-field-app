@@ -28,7 +28,7 @@ interface CrewWorkloadDisplay {
 export const AdminDashboard: React.FC<{ onNavigate?: (screen: string) => void }> = ({ onNavigate }) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
-  const { crew, crewWorkloads, isLoading, error } = useSelector((state: RootState) => state.admin);
+  const { crew, crewWorkloads, isLoading, error, formSubmissions, tasks } = useSelector((state: RootState) => state.admin);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -67,12 +67,38 @@ export const AdminDashboard: React.FC<{ onNavigate?: (screen: string) => void }>
     });
   }, [crew, crewWorkloads]);
 
+  // Calculate form and photo statistics
+  const formStats = useMemo(() => {
+    const now = Date.now();
+    const todayStart = new Date(now).setHours(0, 0, 0, 0);
+
+    const submittedToday = formSubmissions.filter(
+      (f) => f.completedAt >= todayStart
+    ).length;
+
+    const totalPhotos = formSubmissions.reduce(
+      (sum, f) => sum + (f.photoUrls?.length || 0),
+      0
+    );
+
+    const photosToday = formSubmissions
+      .filter((f) => f.completedAt >= todayStart)
+      .reduce((sum, f) => sum + (f.photoUrls?.length || 0), 0);
+
+    return {
+      submittedToday,
+      totalPhotos,
+      photosToday,
+    };
+  }, [formSubmissions]);
+
   const totalStats = useMemo(() => ({
     totalCrew: crew.length,
     openTasks: crewWithWorkload.reduce((sum, c) => sum + c.openTasks, 0),
     completedTasks: crewWithWorkload.reduce((sum, c) => sum + c.completedTasks, 0),
     pendingInspections: crewWithWorkload.reduce((sum, c) => sum + c.inspectionsPending, 0),
-  }), [crew.length, crewWithWorkload]);
+    totalProjects: [...new Set(tasks.map((t) => t.jobSiteId))].length,
+  }), [crew.length, crewWithWorkload, tasks]);
 
   // Memoized workload card component
   const WorkloadCard = React.memo(({ item }: { item: CrewWorkloadDisplay }) => (
@@ -170,6 +196,22 @@ export const AdminDashboard: React.FC<{ onNavigate?: (screen: string) => void }>
             <Text style={[TEXT_STYLES.h3, { color: COLORS.danger }]}>
               {totalStats.pendingInspections}
             </Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: COLORS.primary }]}>
+            <Text style={TEXT_STYLES.label12}>Projects</Text>
+            <Text style={[TEXT_STYLES.h3, { color: COLORS.primary }]}>{totalStats.totalProjects}</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: '#6C5CE7' }]}>
+            <Text style={TEXT_STYLES.label12}>Forms Today</Text>
+            <Text style={[TEXT_STYLES.h3, { color: '#6C5CE7' }]}>{formStats.submittedToday}</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: '#FF6B6B' }]}>
+            <Text style={TEXT_STYLES.label12}>Photos Today</Text>
+            <Text style={[TEXT_STYLES.h3, { color: '#FF6B6B' }]}>{formStats.photosToday}</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: '#FFA502' }]}>
+            <Text style={TEXT_STYLES.label12}>Total Photos</Text>
+            <Text style={[TEXT_STYLES.h3, { color: '#FFA502' }]}>{formStats.totalPhotos}</Text>
           </View>
         </View>
 
