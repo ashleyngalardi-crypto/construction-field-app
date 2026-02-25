@@ -12,6 +12,7 @@ import { CrewListScreen } from '../screens/crew/CrewListScreen';
 import { FormBuilderScreen } from '../screens/forms/FormBuilderScreen';
 import { FormFillingScreen } from '../screens/forms/FormFillingScreen';
 import { FormReviewScreen } from '../screens/forms/FormReviewScreen';
+import { TaskDetailScreen } from '../screens/home/TaskDetailScreen';
 import { BottomTabBar } from '../components/navigation/BottomTabBar';
 
 export type MainTabParamList = {
@@ -29,6 +30,7 @@ export type HomeStackParamList = {
   CrewList: undefined;
   FormBuilder: undefined;
   CrewDetail: { memberId: string };
+  TaskDetail: { taskId: string };
   FormFilling: { formTemplate: any; taskId?: string };
   FormReview: { submissionData: any };
 };
@@ -78,7 +80,11 @@ const HomeStackNavigator = () => {
           component={HomeScreen}
         />
       )}
-      {/* Form screens - accessible to all users */}
+      {/* Task and Form screens - accessible to all users */}
+      <HomeStack.Screen
+        name="TaskDetail"
+        component={TaskDetailScreen}
+      />
       <HomeStack.Screen
         name="FormFilling"
         component={FormFillingScreen}
