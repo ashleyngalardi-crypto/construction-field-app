@@ -13,6 +13,7 @@ import { FormBuilderScreen } from '../screens/forms/FormBuilderScreen';
 import { FormFillingScreen } from '../screens/forms/FormFillingScreen';
 import { FormReviewScreen } from '../screens/forms/FormReviewScreen';
 import { TaskDetailScreen } from '../screens/home/TaskDetailScreen';
+import { CrewMemberDetailScreen } from '../screens/crew/CrewMemberDetailScreen';
 import { BottomTabBar } from '../components/navigation/BottomTabBar';
 
 export type MainTabParamList = {
@@ -84,6 +85,10 @@ const HomeStackNavigator = () => {
       <HomeStack.Screen
         name="TaskDetail"
         component={TaskDetailScreen}
+      />
+      <HomeStack.Screen
+        name="CrewDetail"
+        component={CrewMemberDetailScreen}
       />
       <HomeStack.Screen
         name="FormFilling"
