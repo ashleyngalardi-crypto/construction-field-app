@@ -16,6 +16,8 @@ import { FormTemplate, FormStep } from '../../types';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 import { Button } from '../../components/common/Button';
 import { FormFieldRenderer } from '../../components/forms/FormFieldRenderer';
+import { showError } from '../../components/common/Toast';
+import { getErrorSummary } from '../../utils/errorHandler';
 
 type FormFillingScreenProps = NativeStackScreenProps<any, 'FormFilling'>;
 
@@ -89,7 +91,9 @@ export const FormFillingScreen: React.FC<FormFillingScreenProps> = ({ route, nav
 
     try {
       if (!validateForm()) {
-        Alert.alert('Validation Error', 'Please fill in all required fields');
+        const errorSummary = getErrorSummary(fieldErrors);
+        showError(errorSummary || 'Please fill in all required fields');
+        setValidating(false);
         return;
       }
 

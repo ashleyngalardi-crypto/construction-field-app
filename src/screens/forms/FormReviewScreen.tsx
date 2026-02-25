@@ -19,7 +19,8 @@ import { submitForm } from '../../services/api/formService';
 import { isOnline } from '../../services/sync/offlineUtils';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 import { Button } from '../../components/common/Button';
-import { showToast } from '../../components/common/Toast';
+import { showSuccess, showError, showInfo } from '../../components/common/Toast';
+import { handleError } from '../../utils/errorHandler';
 
 type FormReviewScreenProps = NativeStackScreenProps<any, 'FormReview'>;
 
@@ -93,7 +94,7 @@ export const FormReviewScreen: React.FC<FormReviewScreenProps> = ({ route, navig
 
     try {
       if (!user) {
-        Alert.alert('Error', 'User not authenticated');
+        showError('User not authenticated. Please log in again.');
         return;
       }
 
@@ -111,10 +112,11 @@ export const FormReviewScreen: React.FC<FormReviewScreenProps> = ({ route, navig
 
       if (result) {
         const online = isOnline();
-        showToast(
-          online ? 'success' : 'info',
-          online ? 'Form submitted successfully!' : 'Form saved. Will sync when online.'
-        );
+        if (online) {
+          showSuccess('Form submitted successfully!');
+        } else {
+          showInfo('Form saved. Will sync when online.');
+        }
 
         // Navigate back to home
         setTimeout(() => {
@@ -124,11 +126,10 @@ export const FormReviewScreen: React.FC<FormReviewScreenProps> = ({ route, navig
           });
         }, 1500);
       } else {
-        Alert.alert('Error', 'Failed to submit form. Please try again.');
+        showError('Failed to submit form. Please try again.');
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
+      handleError(error, 'FormSubmission');
     } finally {
       setSubmitting(false);
     }

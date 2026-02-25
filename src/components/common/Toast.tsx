@@ -1,12 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Animated,
-  SafeAreaView,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 
@@ -27,9 +25,18 @@ interface ToastProps {
   onHide?: () => void;
 }
 
+export interface ToastContainerHandle {
+  show: (message: string, type?: ToastType, duration?: number) => void;
+}
+
 // Global toast manager for easier usage
 let toastQueue: ToastMessage[] = [];
 let toastListeners: Array<(messages: ToastMessage[]) => void> = [];
+let globalToastRef: React.RefObject<ToastContainerHandle> | null = null;
+
+export const setToastRef = (ref: React.RefObject<ToastContainerHandle>) => {
+  globalToastRef = ref;
+};
 
 export const addToast = (message: string, type: ToastType = 'info', duration: number = 3000) => {
   const id = `toast_${Date.now()}_${Math.random()}`;
@@ -145,8 +152,15 @@ export const Toast: React.FC<ToastProps> = ({
 };
 
 // Toast Container Component - Use this at the root of your app
-export const ToastContainer: React.FC = () => {
+export const ToastContainer = forwardRef<ToastContainerHandle>((_, ref) => {
+  // Note: The ref provides an alternative API, but the exported functions also work globally
   const [messages, setMessages] = useState<ToastMessage[]>([]);
+
+  useImperativeHandle(ref, () => ({
+    show: (message: string, type: ToastType = 'info', duration: number = 3000) => {
+      addToast(message, type, duration);
+    },
+  }));
 
   useEffect(() => {
     const listener = (msgs: ToastMessage[]) => {
@@ -191,7 +205,7 @@ export const ToastContainer: React.FC = () => {
       ))}
     </View>
   );
-};
+});
 
 function getToastColor(type: ToastType): string {
   switch (type) {
