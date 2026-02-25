@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Image,
@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
 import { Button } from '../common/Button';
+import { isWeb } from '../../utils/platformDetection';
 
 interface Photo {
   uri: string;
@@ -46,11 +48,60 @@ export const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
   error,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canAddMore = value.length < maxPhotos;
 
+  // Web: Handle file input directly
+  const handleWebFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target?.files;
+    if (!files) return;
+
+    try {
+      setLoading(true);
+      const file = files[0];
+
+      // Check file size
+      if (file.size > maxFileSize) {
+        Alert.alert(
+          'File Too Large',
+          `Photo must be smaller than ${Math.round(maxFileSize / 1024 / 1024)}MB`
+        );
+        return;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        const newPhoto: Photo = {
+          uri: base64,
+          name: file.name,
+          size: file.size,
+        };
+        onChange([...value, newPhoto]);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error processing image on web:', err);
+      Alert.alert('Error', 'Failed to process image');
+    } finally {
+      setLoading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [maxFileSize, value, onChange]);
+
   const pickImageFromLibrary = useCallback(async () => {
+    // On web, trigger file input
+    if (isWeb) {
+      fileInputRef.current?.click();
+      return;
+    }
+
+    // Native implementation
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
@@ -76,6 +127,13 @@ export const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
   }, []);
 
   const takePhoto = useCallback(async () => {
+    // On web, same as pick from library (no camera hardware available)
+    if (isWeb) {
+      pickImageFromLibrary();
+      return;
+    }
+
+    // Native implementation
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
@@ -97,7 +155,7 @@ export const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
       console.error('Error taking photo:', err);
       Alert.alert('Error', 'Failed to take photo');
     }
-  }, []);
+  }, [pickImageFromLibrary]);
 
   const processImage = async (uri: string) => {
     try {
@@ -166,6 +224,17 @@ export const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Hidden file input for web */}
+      {isWeb && (
+        <input
+          ref={fileInputRef as any}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleWebFileUpload}
+        />
+      )}
+
       <View style={styles.labelContainer}>
         <Text style={[styles.label, TEXT_STYLES.label]}>
           {label}
@@ -193,7 +262,7 @@ export const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
       {canAddMore && !disabled && (
         <View style={styles.buttonGroup}>
           <Button
-            label="Take Photo"
+            label={isWeb ? 'Upload Photo' : 'Take Photo'}
             onPress={takePhoto}
             variant="secondary"
             size="sm"
