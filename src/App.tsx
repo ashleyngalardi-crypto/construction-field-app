@@ -16,15 +16,6 @@ if (Platform.OS !== 'web') {
 }
 
 const AppContent: React.FC = () => {
-  // Minimal web test - skip everything
-  if (Platform.OS === 'web') {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#ff0000' }}>
-        <Text style={{ fontSize: 24, color: 'white', padding: 20 }}>🔴 RED TEST - App is rendering!</Text>
-      </View>
-    );
-  }
-
   const dispatch = useDispatch();
   const toastRef = useRef<ToastContainerHandle>(null);
 
@@ -45,6 +36,21 @@ const AppContent: React.FC = () => {
     initNetworkMonitor(dispatch);
   }, [dispatch]);
 
+  // On web, use a try-catch to handle any navigation errors gracefully
+  if (Platform.OS === 'web') {
+    return (
+      <ErrorBoundary>
+        <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+          <OfflineBanner />
+          <View style={{ flex: 1 }}>
+            <RootNavigator />
+          </View>
+          <ToastContainer ref={toastRef} />
+        </View>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
@@ -56,15 +62,25 @@ const AppContent: React.FC = () => {
   );
 };
 
+const PersistLoadingScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
+    <Text style={{ fontSize: 18, color: '#666' }}>Loading app...</Text>
+  </View>
+);
+
 export default function App() {
-  // On web, skip Redux completely to isolate the issue
+  // On web, skip PersistGate to avoid rehydration issues
   if (Platform.OS === 'web') {
-    return <AppContent />;
+    return (
+      <Provider store={store}>
+        <AppContent />
+      </Provider>
+    );
   }
 
   return (
     <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
+      <PersistGate loading={<PersistLoadingScreen />} persistor={persistor}>
         <AppContent />
       </PersistGate>
     </Provider>
