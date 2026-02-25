@@ -9,6 +9,7 @@ import { COLORS, SPACING } from '../theme';
 // Import navigators
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
+import { WebNavigationContainer } from './WebNavigationContainer';
 
 const Stack = createNativeStackNavigator();
 
@@ -68,9 +69,8 @@ export const RootNavigator: React.FC = () => {
     );
   }
 
-  // Web - render screens directly without NavigationContainer
-  // (Navigation buttons won't work perfectly, but UI will display)
-  return isAuthenticated ? <MainNavigator /> : <AuthNavigator />;
+  // Web - use Redux-based navigation
+  return <WebNavigationContainer />;
 };
 
 export default RootNavigator;

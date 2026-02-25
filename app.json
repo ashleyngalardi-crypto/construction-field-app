@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Construction Field",
-    "slug": "construction-field-app",
+    "name": "Gravel Log",
+    "slug": "gravel-log-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "constructionfield",
+    "scheme": "gravellog",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "privacy": "https://yourcompany.com/privacy",
     "termsOfServiceUrl": "https://yourcompany.com/terms",
     "ios": {
-      "bundleIdentifier": "com.yourcompany.constructionfield",
+      "bundleIdentifier": "com.gravellog.app",
       "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "package": "com.yourcompany.constructionfield",
+      "package": "com.gravellog.app",
       "versionCode": 1,
       "permissions": [
         "CAMERA",
@@ -37,7 +37,7 @@
         "RECORD_AUDIO"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#1E3A8A",
+        "backgroundColor": "#E8601C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },

@@ -10,6 +10,11 @@ import { OfflineBanner } from './components/common/OfflineBanner';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ToastContainer, ToastContainerHandle, setToastRef } from './components/common/Toast';
 
+// Import web styles
+if (Platform.OS === 'web') {
+  require('./web/globals.css');
+}
+
 // Keep splash screen visible until we're ready (native only)
 if (Platform.OS !== 'web') {
   SplashScreen.preventAutoHideAsync();

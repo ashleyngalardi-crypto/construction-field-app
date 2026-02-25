@@ -1,0 +1,110 @@
+/* Gravel Log Web Typography & Theme */
+
+/* Font Imports */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* CSS Custom Properties */
+:root {
+  /* Brand Colors */
+  --gl-orange: #E8601C;
+  --gl-orange-dark: #C44E15;
+  --gl-orange-light: #F4845F;
+  --gl-orange-tint: #FFF3ED;
+
+  /* Neutrals */
+  --gl-black: #1A1A1A;
+  --gl-charcoal: #2C2A26;
+  --gl-gray: #9A9A9A;
+  --gl-sand: #E8E5E0;
+  --gl-cream: #F5F3EF;
+
+  /* Typography */
+  --gl-font-brand: 'Barlow Condensed', sans-serif;
+  --gl-font-body: 'DM Sans', sans-serif;
+  --gl-font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing & Radius */
+  --gl-radius-sm: 8px;
+  --gl-radius-md: 14px;
+  --gl-radius-lg: 20px;
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--gl-font-body);
+  background-color: var(--gl-cream);
+  color: var(--gl-black);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--gl-font-brand);
+  color: var(--gl-black);
+  margin: 0;
+}
+
+h1 {
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 40px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 36px;
+  letter-spacing: -0.25px;
+}
+
+h3 {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 32px;
+}
+
+/* Input Focus - Prevent iOS zoom */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+textarea,
+select {
+  font-size: 16px;
+  font-family: var(--gl-font-body);
+  -webkit-user-select: text;
+}
+
+/* Touch Interaction */
+button, a {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Scrolling */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+}

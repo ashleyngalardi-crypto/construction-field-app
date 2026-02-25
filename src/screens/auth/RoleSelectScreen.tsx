@@ -6,14 +6,33 @@ import {
   StyleSheet,
   ScrollView,
   SafeAreaView,
+  Platform,
 } from 'react-native';
+import { useDispatch } from 'react-redux';
 import { COLORS, SPACING, RADIUS, TEXT_STYLES } from '../../theme';
+import { GravelLogLogo } from '../../components/common/GravelLogLogo';
+import { webNavigate } from '../../navigation/webUtils';
 
 interface RoleSelectScreenProps {
-  onSelectRole: (role: 'crew' | 'admin') => void;
+  onSelectRole?: (role: 'crew' | 'admin') => void;
 }
 
 export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({ onSelectRole }) => {
+  const dispatch = useDispatch();
+
+  const handleSelectRole = (role: 'crew' | 'admin') => {
+    if (Platform.OS === 'web') {
+      // Web: use Redux navigation
+      if (role === 'crew') {
+        webNavigate(dispatch, 'phone-auth');
+      } else {
+        webNavigate(dispatch, 'admin-login');
+      }
+    } else {
+      // Native: use callback navigation
+      onSelectRole?.(role);
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -22,9 +41,7 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({ onSelectRole
       >
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>🏗️</Text>
-          </View>
+          <GravelLogLogo size="lg" showWordmark={false} />
         </View>
 
         {/* Title */}
@@ -38,7 +55,7 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({ onSelectRole
           {/* Crew Option */}
           <TouchableOpacity
             style={styles.roleButton}
-            onPress={() => onSelectRole('crew')}
+            onPress={() => handleSelectRole('crew')}
             activeOpacity={0.7}
           >
             <View style={styles.roleIconContainer}>
@@ -56,7 +73,7 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({ onSelectRole
           {/* Admin Option */}
           <TouchableOpacity
             style={[styles.roleButton, styles.adminButton]}
-            onPress={() => onSelectRole('admin')}
+            onPress={() => handleSelectRole('admin')}
             activeOpacity={0.7}
           >
             <View style={[styles.roleIconContainer, styles.adminIconContainer]}>

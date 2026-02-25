@@ -1,7 +1,13 @@
-// Color design system for Construction Field App
+// Color design system for Gravel Log Construction
 export const COLORS = {
-  // Primary & Secondary
-  primary: "#E8601C", // Safety Orange
+  // Brand - Orange
+  brand: "#E8601C",
+  brandDark: "#C44E15",
+  brandLight: "#F4845F",
+  brandTint: "#FFF3ED",
+
+  // Aliases for existing code
+  primary: "#E8601C",
   primaryLight: "#FFF0E8",
   primaryDark: "#C44E15",
 
@@ -20,13 +26,20 @@ export const COLORS = {
   blueLight: "#EBF4FF",
   info: "#2B6CB0", // Alias for blue
 
-  // Neutral
-  bg: "#F5F3EF", // Background
-  card: "#FFFFFF", // Card
-  white: "#FFFFFF", // White
-  text: "#1A1A1A", // Primary Text
-  textMid: "#5C5C5C", // Secondary Text
-  textLight: "#9A9A9A", // Tertiary Text
+  // Neutral - Gravel Log
+  black: "#1A1A1A",
+  charcoal: "#2C2A26",
+  gray: "#9A9A9A",
+  sand: "#E8E5E0",
+  cream: "#F5F3EF",
+
+  // Aliases for existing code
+  bg: "#F5F3EF",
+  card: "#FFFFFF",
+  white: "#FFFFFF",
+  text: "#1A1A1A",
+  textMid: "#5C5C5C",
+  textLight: "#9A9A9A",
   border: "#E8E5E0",
 
   // Semantic

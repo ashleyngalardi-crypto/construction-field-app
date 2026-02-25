@@ -4,6 +4,7 @@ import { webCompatibleStorage } from './webStorage';
 import authReducer from './slices/authSlice';
 import adminReducer from './slices/adminSlice';
 import offlineReducer from './slices/offlineSlice';
+import webNavigationReducer from './slices/webNavigationSlice';
 
 // Persist configuration
 const persistConfig = {
@@ -21,6 +22,7 @@ export const store = configureStore({
     auth: persistedAuthReducer,
     admin: adminReducer,
     offline: offlineReducer,
+    webNavigation: webNavigationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
